@@ -25,4 +25,3 @@ Three connected projects that deploy a two-tier Azure environment.
 - **Secrets stay out of the repo.** The SQL password is passed through an environment variable locally and a secret pipeline variable in Azure DevOps.
 - **Azure DevOps changes over time.** "Service principal (automatic)" is now called "App registration (automatic)", so I had to find the new option when creating my service connection.
 - **Cost control.** I deleted the resource groups after each test and used `[skip ci]` in commits so the pipeline doesn't redeploy by accident.
-'@ | Set-Content README.md
