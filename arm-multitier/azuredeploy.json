@@ -1,0 +1,59 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "sqlAdminUser": { "type": "string" },
+    "sqlAdminPassword": { "type": "securestring" }
+  },
+  "variables": {
+    "planName": "[concat('plan-', uniqueString(resourceGroup().id))]",
+    "webName": "[concat('web-', uniqueString(resourceGroup().id))]",
+    "sqlName": "[concat('sql-', uniqueString(resourceGroup().id))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-03-01",
+      "name": "[variables('planName')]",
+      "location": "[resourceGroup().location]",
+      "sku": { "name": "F1" }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-03-01",
+      "name": "[variables('webName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [ "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]" ],
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
+        "httpsOnly": true
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2022-05-01-preview",
+      "name": "[variables('sqlName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "administratorLogin": "[parameters('sqlAdminUser')]",
+        "administratorLoginPassword": "[parameters('sqlAdminPassword')]"
+      },
+      "resources": [
+        {
+          "type": "databases",
+          "apiVersion": "2022-05-01-preview",
+          "name": "appdb",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [ "[resourceId('Microsoft.Sql/servers', variables('sqlName'))]" ],
+          "sku": { "name": "Basic", "tier": "Basic" }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "webAppUrl": {
+      "type": "string",
+      "value": "[concat('https://', variables('webName'), '.azurewebsites.net')]"
+    }
+  }
+}

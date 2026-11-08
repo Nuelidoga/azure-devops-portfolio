@@ -1,0 +1,42 @@
+trigger:
+  branches:
+    include: [ main ]
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  serviceConnection: 'azure-sc'
+  rgName: 'rg-multitier-pipeline'
+  location: 'westus3'
+
+stages:
+- stage: Validate
+  jobs:
+  - job: ValidateTemplate
+    steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: $(serviceConnection)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az group create -n $(rgName) -l $(location)
+          az deployment group validate -g $(rgName) \
+            --template-file arm-multitier/azuredeploy.json \
+            --parameters sqlAdminUser=sqladmin sqlAdminPassword=$(sqlPassword)
+
+- stage: Deploy
+  dependsOn: Validate
+  jobs:
+  - job: DeployTemplate
+    steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: $(serviceConnection)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az deployment group create -g $(rgName) \
+            --template-file arm-multitier/azuredeploy.json \
+            --parameters sqlAdminUser=sqladmin sqlAdminPassword=$(sqlPassword)
